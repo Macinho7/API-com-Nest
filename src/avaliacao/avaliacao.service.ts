@@ -21,8 +21,19 @@ export class AvaliacaoService {
     }
     return pessoa;
   }
+  private async verificarAvalicaoExistente(id: string) {
+    const pessoaid = await this.pessoaRepository.findOneBy({ id });
+    if (pessoaid?.avaliacao && pessoaid.avaliacao.length > 0) {
+      throw new NotFoundException('ja existe uma avaliacao para essa pessoa');
+    }
+    return pessoaid;
+  }
   async criaAvaliacao(id: string, dados: criaAvaliacaoDTO) {
     const pessoaID = await this.acharPessoa(id);
+    const ver = await this.verificarAvalicaoExistente(id);
+    if (!ver) {
+      throw new NotFoundException('ja existe uma avaliacao para essa pessoa');
+    }
 
     const avaliacaoEntity = new AvaliacaoEntity();
     avaliacaoEntity.id = dados.id;
@@ -36,6 +47,7 @@ export class AvaliacaoService {
     return criado;
   }
 
+
   async listarAvaliacoes() {
     const achado = await this.avaliacaoRepository.find();
 
@@ -45,15 +57,11 @@ export class AvaliacaoService {
     return await this.avaliacaoRepository.delete({ id });
   }
   async atualizarAvaliacao(id: string, dados: atualizarAvalicaoDTO) {
-    //const pessoaID = await this.acharPessoa(pes);
     const achado = await this.avaliacaoRepository.findOneBy({ id });
     if (achado === null) {
       throw new NotFoundException('id avaliacao nao achado');
     }
-    achado.avaliador = dados.avaliador;
-    achado.avaliacao = dados.avaliacao;
-    achado.opniao = dados.opniao;
-    //pessoaID.nome = achado.avaliador;
+    Object.assign(achado, dados as AvaliacaoEntity);
     const salvar = await this.avaliacaoRepository.save(achado);
     return salvar;
   }
